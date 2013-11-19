@@ -65,28 +65,28 @@ class BattleTetro(object):
 
     def execute(self):
         while True:
-            if random.randint(0, 1) == 0:
-                pygame.mixer.music.load('sound/tetrisb.mid')
-            else:
-                pygame.mixer.music.load('sound/tetrisc.mid')
-            pygame.mixer.music.play(-1, 0.0)
+            #if random.randint(0, 1) == 0:
+            #    pygame.mixer.music.load('sound/tetrisb.mid')
+            #else:
+            #    pygame.mixer.music.load('sound/tetrisc.mid')
+            #pygame.mixer.music.play(-1, 0.0)
             self.run_game()
-            pygame.mixer.music.stop()
+            #pygame.mixer.music.stop()
             self.show_text_screen('Game Over')
 
     def run_game(self):
         # Setup variable for the start of the game
         self.now = time.time()
+        player_count = 2  # self.get_number_of_players()  # TODO: Work this out as network or local. Two is max.
         falling_piece = get_new_piece()
         next_piece = get_new_piece()
 
-        player_count = 2  # self.get_number_of_players()  # TODO: Work this out as network or local. Two is max.
         for i in range(player_count):
             from battle.player import Player
             player = Player(self.now, i, (player_count == 1))
             player.border_color = BORDER_COLOR[i]
-            player.falling_piece = falling_piece
-            player.next_piece = next_piece
+            player.falling_piece = falling_piece.copy()
+            player.next_piece = next_piece.copy()
             self.players.append(player)
 
         while True:
@@ -97,7 +97,8 @@ class BattleTetro(object):
                 if player.falling_piece is None:
                     # No falling piece in play, so start a new piece at the top
                     player.update_falling_piece(now)
-                stop_play = not is_valid_position(player.board, player.falling_piece) and stop_play
+                player.game_over = not is_valid_position(player.board, player.falling_piece)
+                stop_play = player.game_over and stop_play
 
             if stop_play:
                 return  # can't fit a new piece on the board, so game over
@@ -110,9 +111,9 @@ class BattleTetro(object):
                             continue
                         # Pausing the game
                         self.surface.fill(BG_COLOR)
-                        pygame.mixer.music.stop()
+                        #pygame.mixer.music.stop()
                         self.show_text_screen('Paused')  # pause until a key press
-                        pygame.mixer.music.play(-1, 0.0)
+                        #pygame.mixer.music.play(-1, 0.0)
                         now = time.time()
                         for player in self.players:
                             player.last_fall_time = now
@@ -132,7 +133,7 @@ class BattleTetro(object):
             # draw everything from the board on to the screen
             self.surface.fill(BG_COLOR)
             self.draw_status(self.players[0].score, self.players[0].level)
-            self.draw_next_piece(self.players[0].next_piece)
+            self.draw_next_piece()
             for player in self.players:
                 self.draw_board(player.board, player.board_offset, player.border_color)
                 if player.falling_piece is not None:
@@ -165,6 +166,9 @@ class BattleTetro(object):
         while check_for_key_press() is None:
             pygame.display.update()
             self.clock.tick()
+
+        self.surface.fill(BG_COLOR)
+        pygame.display.flip()
 
     def get_number_of_players(self):
         self.surface.fill(BG_COLOR)
@@ -250,13 +254,13 @@ class BattleTetro(object):
         """
         score_surface = self.fonts['basic'].render('Score: %s' % score, True, TEXT_COLOR)
         score_rect = score_surface.get_rect()
-        score_rect.topleft = (WINDOW_WIDTH - 150, 20)
+        score_rect.topleft = (WINDOW_WIDTH - 140, 20)
         self.surface.blit(score_surface, score_rect)
 
         # Draw the level text
         level_surface = self.fonts['basic'].render('Level: %s' % level, True, TEXT_COLOR)
         level_rect = level_surface.get_rect()
-        level_rect.topleft = (WINDOW_WIDTH - 150, 50)
+        level_rect.topleft = (WINDOW_WIDTH - 140, 50)
         self.surface.blit(level_surface, level_rect)
 
     def draw_piece(self, piece, pixel_x=None, pixel_y=None, offset=0):
@@ -271,19 +275,18 @@ class BattleTetro(object):
                 if shape_to_draw[x][y] not in (BLANK, POISON):
                     self.draw_box(None, None, piece['color'], pixel_x + (x * BOX_SIZE), pixel_y + (y * BOX_SIZE))
 
-    def draw_next_piece(self, piece):
+    def draw_next_piece(self):
         """
         Draw the "Next" text.
-
-        @param piece:
         """
         next_surface = self.fonts['basic'].render('Next:', True, TEXT_COLOR)
         next_rect = next_surface.get_rect()
-        next_rect.topleft = (WINDOW_WIDTH - 120, 80)
+        next_rect.topleft = (WINDOW_WIDTH - 120, 100)
         self.surface.blit(next_surface, next_rect)
 
-        # Draw the "next" piece
-        self.draw_piece(piece, pixel_x=WINDOW_WIDTH-120, pixel_y=100)
+        for key, player in enumerate(self.players):
+            # Draw the "next" piece
+            self.draw_piece(player.next_piece, pixel_x=WINDOW_WIDTH-140, pixel_y=120+(int(key) * 90))
 
     @staticmethod
     def convert_pixel_to_coordinates(box_x, box_y, offset=0):
@@ -297,7 +300,6 @@ class BattleTetro(object):
     def make_text_objects(text, font, color):
         surface = font.render(text, True, color)
         return surface, surface.get_rect()
-
 
 
 if __name__ == '__main__':

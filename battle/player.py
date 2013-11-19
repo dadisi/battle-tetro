@@ -14,6 +14,7 @@ class Player(object):
     board = None
     border_color = None
     board_offset = 0
+    bangs = 3.0
     now = None
     last_move_down_time = now
     last_move_sideways_time = now
@@ -28,6 +29,7 @@ class Player(object):
     falling_piece = None
     next_piece = None
     controls = tuple()
+    game_over = False
 
     def __init__(self, now=None, player_num=0, single_player=True):
         if not now:
@@ -48,6 +50,8 @@ class Player(object):
         self.level, self.fall_frequency = calculate_level_and_fall_frequency(self.score)
 
     def update_falling_piece(self, now):
+        if self.game_over:
+            return
         self.falling_piece = self.next_piece
         self.turn += 1
         self.next_piece = get_new_piece(self.turn)
@@ -58,6 +62,8 @@ class Player(object):
         Remove any completed lines on the board, move everything above them
         down, and return the number of complete lines.
         """
+        if self.game_over:
+            return
         num_lines_removes = 0
         y = BOARD_HEIGHT - 1  # Start y at the bottom of the board
         while y >= 0:
@@ -81,6 +87,7 @@ class Player(object):
         if num_lines_removes:
             self.score += num_lines_removes
             self.update_level()
+            self.bangs += num_lines_removes * .25  # One new bang every four lines
 
     def is_completed_line_with_bonus(self, y):
         """
@@ -98,8 +105,8 @@ class Player(object):
         return True, bonus
 
     def handle_event(self, event_type, key):
-        if key not in self.controls:
-            return 
+        if key not in self.controls or self.game_over:
+            return
         if event_type == KEYUP:
             if key in (K_LEFT, K_a):
                 self.moving_left = False
@@ -148,6 +155,8 @@ class Player(object):
                 self.falling_piece['y'] += i - 1
 
     def calculate_moves(self, now):
+        if self.game_over:
+            return
         # Handling moving the block because of user input
         if (self.moving_left or self.moving_right) and now - self.last_move_sideways_time > MOVE_SIDE_WAYS_FREQ:
             if self.moving_left and is_valid_position(self.board, self.falling_piece, adj_x=-1):

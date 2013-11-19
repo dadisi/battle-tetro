@@ -14,21 +14,6 @@ def convert_pixel_to_coordinates(box_x, box_y, offset=0):
     return X_MARGIN + offset + (box_x * BOX_SIZE), TOP_MARGIN + (box_y * BOX_SIZE)
 
 
-def get_new_piece():
-    """
-    Return a random new piece in a random rotation, color, and location.
-    """
-    shape = random.choice(list(SHAPES.keys()))
-    new_piece = {
-        'shape': shape,
-        'rotation': random.randint(0, len(SHAPES[shape]) - 1),
-        'x': random.randint(0 + TEMPLATE_WIDTH, BOARD_WIDTH - TEMPLATE_WIDTH),
-        'y': -2,  # start it above the board (i.e. less than 0)
-        'color': random.randint(0, len(COLORS) - 1)
-    }
-    return new_piece
-
-
 def get_blank_board():
     """
     Create and return a new blank board data structure.
@@ -56,17 +41,17 @@ def get_new_piece(turn=None):
     Return a random new piece in a random rotation, color, and location.
     """
     if turn is not None and turn < len(pieces):
-        return pieces[turn]
+        return pieces[turn].copy()
     shape = random.choice(list(SHAPES.keys()))
     new_piece = {
         'shape': shape,
         'rotation': random.randint(0, len(SHAPES[shape]) - 1),
-        'x': random.randint(0 + TEMPLATE_WIDTH, BOARD_WIDTH - TEMPLATE_WIDTH),
+        'x': random.randint(0, BOARD_WIDTH - TEMPLATE_WIDTH),
         'y': -2,  # start it above the board (i.e. less than 0)
         'color': random.randint(0, len(COLORS) - 1)
     }
     pieces.append(new_piece)
-    return new_piece
+    return new_piece.copy()
 
 
 def is_on_board(x, y):
