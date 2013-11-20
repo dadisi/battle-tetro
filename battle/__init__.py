@@ -80,7 +80,7 @@ class BattleTetro(object):
         falling_piece = get_new_piece()
         next_piece = get_new_piece()
 
-        player_count = self.get_number_of_players()  # TODO: Work this out as network or local. Two is max.
+        player_count = 2  # self.get_number_of_players()  # TODO: Work this out as network or local. Two is max.
         for i in range(player_count):
             from battle.player import Player
             player = Player(self.now, i, (player_count == 1))
@@ -167,7 +167,42 @@ class BattleTetro(object):
             self.clock.tick()
 
     def get_number_of_players(self):
-        return len(self.fonts)
+        self.surface.fill(BG_COLOR)
+        text = 'Players?'
+        title_surface, title_rect = self.make_text_objects(text, self.fonts['big'], TEXT_SHADOW)
+        title_rect.center = (int(WINDOW_WIDTH / 2), int(WINDOW_HEIGHT / 2))
+        self.surface.blit(title_surface, title_rect)
+
+        # Draw the text
+        title_surface, title_rect = self.make_text_objects(text, self.fonts['big'], TEXT_COLOR)
+        title_rect.center = (int(WINDOW_WIDTH / 2) - 3, int(WINDOW_HEIGHT / 2) - 3)
+        self.surface.blit(title_surface, title_rect)
+
+        # Draw the additional "Press a key to play." text.
+        press_key_surface, press_key_rect = self.make_text_objects('Press Enter 1 or 2.', self.fonts['basic'], TEXT_COLOR)
+        press_key_rect.center = (int(WINDOW_WIDTH / 2), 20)
+        self.surface.blit(press_key_surface, press_key_rect)
+
+        font = pygame.font.Font(None, 50)
+        num_players = ""
+        while True:
+            for evt in pygame.event.get():
+                if evt.type == KEYDOWN:
+                    if evt.unicode.isalpha():
+                        num_players += evt.unicode
+                    elif evt.key == K_BACKSPACE:
+                        name = num_players[:-1]
+                    elif evt.key == K_RETURN:
+                        num_players = ""
+                elif evt.type == QUIT:
+                    return
+
+            block = font.render(num_players, True, TEXT_COLOR)
+            rect = block.get_rect()
+            rect.center = self.surface.get_rect().center
+            self.surface.blit(block, rect)
+            pygame.display.update()
+        return int(num_players)
 
     def draw_box(self, box_x, box_y, color, pixel_x=None, pixel_y=None, offset=0):
         """
